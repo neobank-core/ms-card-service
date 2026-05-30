@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -64,16 +65,27 @@ public class CardController {
     @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
     @GetMapping("/{id}")
     public ResponseEntity<CardResponse> getCard(@PathVariable UUID id, @AuthenticationPrincipal Jwt jwt) {
-        String userId = jwt.getSubject();
-        Card card = cardService.getUserCard(id, userId);
+        Card card = hasRole(jwt, "ADMIN")
+                ? cardService.getCardById(id)
+                : cardService.getUserCard(id, jwt.getSubject());
         return ResponseEntity.ok(cardMapper.toResponse(card));
     }
 
     @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
     @PutMapping("/{id}/block")
     public ResponseEntity<CardResponse> blockCard(@PathVariable UUID id, @AuthenticationPrincipal Jwt jwt) {
-        String userId = jwt.getSubject();
-        Card card = cardService.blockCard(id, userId);
+        Card card = hasRole(jwt, "ADMIN")
+                ? cardService.blockCardById(id)
+                : cardService.blockCard(id, jwt.getSubject());
         return ResponseEntity.ok(cardMapper.toResponse(card));
+    }
+
+    private boolean hasRole(Jwt jwt, String role) {
+        Map<String, Object> realmAccess = jwt.getClaimAsMap("realm_access");
+        if (realmAccess == null || !realmAccess.containsKey("roles")) {
+            return false;
+        }
+        Object roles = realmAccess.get("roles");
+        return roles instanceof List<?> roleList && roleList.contains(role);
     }
 }

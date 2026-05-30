@@ -112,9 +112,24 @@ public class CardService {
                 .orElseThrow(() -> new CardNotFoundException("Card not found: " + cardId));
     }
 
+    public Card getCardById(UUID cardId) {
+        return cardRepository.findById(cardId)
+                .orElseThrow(() -> new CardNotFoundException("Card not found: " + cardId));
+    }
+
     @Transactional
     public Card blockCard(UUID cardId, String userId) {
         Card card = getUserCard(cardId, userId);
+        return blockCard(card);
+    }
+
+    @Transactional
+    public Card blockCardById(UUID cardId) {
+        Card card = getCardById(cardId);
+        return blockCard(card);
+    }
+
+    private Card blockCard(Card card) {
         card.setStatus(CardStatus.BLOCKED);
         Card savedCard = cardRepository.save(card);
         cardEventPublisher.publishCardBlocked(new CardBlockedEvent(
