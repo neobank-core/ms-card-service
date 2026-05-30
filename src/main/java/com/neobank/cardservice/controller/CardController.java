@@ -2,6 +2,8 @@ package com.neobank.cardservice.controller;
 
 import com.neobank.cardservice.dto.CardResponse;
 import com.neobank.cardservice.dto.CreateCardRequest;
+import com.neobank.cardservice.dto.CreateCardResponse;
+import com.neobank.cardservice.dto.VerifyThreeDsRequest;
 import com.neobank.cardservice.entity.Card;
 import com.neobank.cardservice.mapper.CardMapper;
 import com.neobank.cardservice.service.CardService;
@@ -43,12 +45,19 @@ public class CardController {
 
     @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
     @PostMapping
-    public ResponseEntity<CardResponse> createCard(
+    public ResponseEntity<CreateCardResponse> createCard(
             @AuthenticationPrincipal Jwt jwt,
-            @RequestBody @Valid CreateCardRequest request
-    ) {
-        String userId = jwt.getSubject();
-        Card card = cardService.createCard(request, userId);
+            @RequestBody @Valid CreateCardRequest request) {
+        return ResponseEntity.ok(cardService.createCard(request, jwt.getSubject()));
+    }
+
+    @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
+    @PostMapping("/{id}/verify-3ds")
+    public ResponseEntity<CardResponse> verifyThreeDs(
+            @PathVariable UUID id,
+            @RequestBody @Valid VerifyThreeDsRequest request,
+            @AuthenticationPrincipal Jwt jwt) {
+        Card card = cardService.verifyThreeDs(id, request.sessionToken(), request.otp(), jwt.getSubject());
         return ResponseEntity.ok(cardMapper.toResponse(card));
     }
 

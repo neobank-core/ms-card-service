@@ -6,5 +6,13 @@ import com.neobank.cardservice.enums.CardType;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-public record CardResponse(UUID id, UUID accountId, String cardNumberMasked, String cardHolderName, Integer expiryMonth, Integer expiryYear, CardType cardType, CardStatus cardStatus, LocalDateTime createdAt) {
+public record CardResponse(UUID id,
+                           UUID accountId,
+                           String cardNumberMasked,
+                           String cardHolderName,
+                           Integer expiryMonth,
+                           Integer expiryYear,
+                           CardType cardType,
+                           CardStatus cardStatus,
+                           LocalDateTime createdAt) {
 }

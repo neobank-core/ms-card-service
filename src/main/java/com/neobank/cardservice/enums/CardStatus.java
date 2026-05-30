@@ -3,5 +3,6 @@ package com.neobank.cardservice.enums;
 public enum CardStatus {
     ACTIVE,
     EXPIRED,
-    BLOCKED
+    BLOCKED,
+    PENDING_VERIFICATION
 }

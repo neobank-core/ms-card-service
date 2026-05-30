@@ -18,5 +18,6 @@ CREATE TABLE three_ds_sessions (
                                    session_token VARCHAR(255) UNIQUE NOT NULL,
                                    otp_code VARCHAR(20) NOT NULL,
                                    verified BOOLEAN NOT NULL,
-                                   expires_at TIMESTAMP NOT NULL
+                                   expires_at TIMESTAMP NOT NULL,
+                                   created_at TIMESTAMP NOT NULL
 );
