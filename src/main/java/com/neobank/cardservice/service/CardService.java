@@ -1,10 +1,12 @@
 package com.neobank.cardservice.service;
 
+import com.neobank.cardservice.client.AccountServiceClient;
 import com.neobank.cardservice.dto.CreateCardRequest;
 import com.neobank.cardservice.dto.CreateCardResponse;
 import com.neobank.cardservice.entity.Card;
 import com.neobank.cardservice.entity.ThreeDsSession;
 import com.neobank.cardservice.enums.CardStatus;
+import com.neobank.cardservice.exception.AccountAccessDeniedException;
 import com.neobank.cardservice.event.CardBlockedEvent;
 import com.neobank.cardservice.event.CardCreatedEvent;
 import com.neobank.cardservice.exception.CardNotFoundException;
@@ -27,11 +29,17 @@ public class CardService {
     private final CardRepository cardRepository;
     private final CardEventPublisher cardEventPublisher;
     private final ThreeDsSessionRepository threeDsSessionRepository;
+    private final AccountServiceClient accountServiceClient;
 
     private static final boolean THREE_DS_ENABLED = true;
 
     @Transactional
     public CreateCardResponse createCard(CreateCardRequest request, String userId) {
+        UUID keycloakUserId = UUID.fromString(userId);
+        if (!accountServiceClient.isAccountOwnedBy(request.accountId(), keycloakUserId)) {
+            throw new AccountAccessDeniedException("Account does not belong to the current user");
+        }
+
         Card card = Card.builder()
                 .accountId(request.accountId())
                 .userId(userId)

@@ -11,6 +11,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 import java.util.List;
 import java.util.Map;
@@ -20,11 +21,19 @@ import java.util.stream.Collectors;
 @EnableWebSecurity
 @EnableMethodSecurity
 public class SecurityConfig {
+
+    private final InternalApiKeyFilter internalApiKeyFilter;
+
+    public SecurityConfig(InternalApiKeyFilter internalApiKeyFilter) {
+        this.internalApiKeyFilter = internalApiKeyFilter;
+    }
+
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .addFilterBefore(internalApiKeyFilter, UsernamePasswordAuthenticationFilter.class)
                 .authorizeHttpRequests(auth -> auth.requestMatchers(
                         "/swagger-ui/**",
                         "/v3/api-docs",
@@ -32,7 +41,9 @@ public class SecurityConfig {
                         "/actuator/health",
                         "/actuator/info",
                         "/actuator/prometheus"
-                ).permitAll().anyRequest().authenticated())
+                ).permitAll()
+                .requestMatchers("/api/internal/**").hasRole("INTERNAL")
+                .anyRequest().authenticated())
                 .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())));
         return http.build();
     }

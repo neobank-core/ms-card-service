@@ -13,6 +13,17 @@ import java.time.LocalDateTime;
 @ControllerAdvice
 public class GlobalExceptionHandler {
 
+    @ExceptionHandler(AccountAccessDeniedException.class)
+    public ResponseEntity<ErrorResponse> handleAccountAccessDenied(AccountAccessDeniedException ex, HttpServletRequest request) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.FORBIDDEN.value(),
+                "Access Denied",
+                ex.getMessage(),
+                request.getRequestURI()
+        ));
+    }
+
     @ExceptionHandler(CardNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleCardNotFound(CardNotFoundException ex, HttpServletRequest request) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ErrorResponse(
