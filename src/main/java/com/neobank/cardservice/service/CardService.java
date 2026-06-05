@@ -1,6 +1,8 @@
 package com.neobank.cardservice.service;
 
 import com.neobank.cardservice.client.AccountServiceClient;
+import com.neobank.cardservice.client.WireMockClient;
+import com.neobank.cardservice.config.FeatureFlags;
 import com.neobank.cardservice.dto.CreateCardRequest;
 import com.neobank.cardservice.dto.CreateCardResponse;
 import com.neobank.cardservice.entity.Card;
@@ -13,6 +15,7 @@ import com.neobank.cardservice.exception.CardNotFoundException;
 import com.neobank.cardservice.publisher.CardEventPublisher;
 import com.neobank.cardservice.repository.CardRepository;
 import com.neobank.cardservice.repository.ThreeDsSessionRepository;
+import io.getunleash.Unleash;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,8 +33,8 @@ public class CardService {
     private final CardEventPublisher cardEventPublisher;
     private final ThreeDsSessionRepository threeDsSessionRepository;
     private final AccountServiceClient accountServiceClient;
-
-    private static final boolean THREE_DS_ENABLED = true;
+    private final WireMockClient wireMockClient;
+    private final Unleash unleash;
 
     @Transactional
     public CreateCardResponse createCard(CreateCardRequest request, String userId) {
@@ -48,14 +51,14 @@ public class CardService {
                 .expiryMonth(12)
                 .expiryYear(Year.now().getValue() + 4)
                 .cardType(request.cardType())
-                .status(THREE_DS_ENABLED
+                .status(unleash.isEnabled(FeatureFlags.CARD_3DS_VERIFICATION)
                         ? CardStatus.PENDING_VERIFICATION
                         : CardStatus.ACTIVE)
                 .build();
 
         Card savedCard = cardRepository.save(card);
 
-        if (!THREE_DS_ENABLED) {
+        if (!unleash.isEnabled(FeatureFlags.CARD_3DS_VERIFICATION)) {
             cardEventPublisher.publishCardCreated(new CardCreatedEvent(
                     savedCard.getId(), savedCard.getAccountId(),
                     savedCard.getUserId(), savedCard.getCardNumberMasked()
@@ -63,11 +66,14 @@ public class CardService {
             return new CreateCardResponse(savedCard.getId(), savedCard.getStatus().name(), null);
         }
 
-        String sessionToken = UUID.randomUUID().toString();
+        java.util.Map<String, String> mockResponse = wireMockClient.initiate3ds();
+        String sessionToken = mockResponse.get("sessionToken");
+        String mockOtp = mockResponse.get("mockOtp");
+
         ThreeDsSession session = ThreeDsSession.builder()
                 .cardId(savedCard.getId())
                 .sessionToken(sessionToken)
-                .otpCode("123456")
+                .otpCode(mockOtp)
                 .verified(false)
                 .build();
 

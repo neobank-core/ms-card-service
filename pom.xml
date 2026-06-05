@@ -122,7 +122,14 @@
             <artifactId>spring-boot-starter-webmvc-test</artifactId>
             <scope>test</scope>
         </dependency>
-</dependencies>
+        
+        <!-- Unleash Feature Flags -->
+        <dependency>
+            <groupId>io.getunleash</groupId>
+            <artifactId>springboot-unleash-starter</artifactId>
+            <version>1.1.0</version>
+        </dependency>
+    </dependencies>
 
     <dependencyManagement>
         <dependencies>
